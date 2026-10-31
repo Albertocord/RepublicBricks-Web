@@ -13,11 +13,13 @@
     h1{margin:0;font-size:32px}p{margin:0;max-width:360px;line-height:1.5;color:#b8c0dd}progress{width:min(280px,80vw);accent-color:#b29aff}button{padding:12px 24px;border:0;border-radius:12px;background:#b29aff;color:#101426;font:600 16px system-ui;cursor:pointer}[hidden]{display:none!important}
   </style>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="adsgram-bridge.js"></script>
 </head>
 <body>
   <main id="stage"><canvas id="unity-canvas" width="450" height="800" tabindex="0" aria-label="Republic Bricks"></canvas></main>
   <section id="loading" aria-live="polite">
-    <h1>Republic Bricks</h1><p id="status">Versión de prueba · Sin anuncios</p>
+    <h1>Republic Bricks</h1><p id="status">Versión de prueba · Anuncios de prueba</p>
+    <a href="privacy.html" target="_blank" rel="noopener" style="color:#b8c0dd">Privacidad</a>
     <progress id="progress" max="1" value="0" hidden></progress>
     <button id="play">Jugar</button>
     <p id="hint">Arrastra hacia arriba y suelta para lanzar. El progreso se guarda en este navegador.</p>
@@ -81,6 +83,7 @@
           devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
           showBanner: (message, type) => { console[type === 'error' ? 'error' : 'warn'](message); }
         }, value => { progress.value = value; status.textContent = 'Cargando… ' + Math.round(value * 100) + '%'; });
+        window.RepublicBricksAds?.attachUnity(game);
         document.getElementById('loading').hidden = true;
         if (inTelegram) tg.BackButton.show();
         canvas.focus();
