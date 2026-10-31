@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#101426">
+  <title>Republic Bricks</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101426;color:#f3f4ff;font:16px system-ui,sans-serif}
+    #stage{position:fixed;display:flex;justify-content:center;align-items:center;inset:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+    #unity-canvas{display:block;width:100%;height:100%;max-width:560px;background:#101426;touch-action:none;outline:none}
+    #loading{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#101426;padding:28px;text-align:center;gap:18px}
+    h1{margin:0;font-size:32px}p{margin:0;max-width:360px;line-height:1.5;color:#b8c0dd}progress{width:min(280px,80vw);accent-color:#b29aff}button{padding:12px 24px;border:0;border-radius:12px;background:#b29aff;color:#101426;font:600 16px system-ui;cursor:pointer}[hidden]{display:none!important}
+  </style>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <main id="stage"><canvas id="unity-canvas" width="450" height="800" tabindex="0" aria-label="Republic Bricks"></canvas></main>
+  <section id="loading" aria-live="polite">
+    <h1>Republic Bricks</h1><p id="status">Versión de prueba · Sin anuncios</p>
+    <progress id="progress" max="1" value="0" hidden></progress>
+    <button id="play">Jugar</button>
+    <p id="hint">Arrastra hacia arriba y suelta para lanzar. El progreso se guarda en este navegador.</p>
+  </section>
+  <script src="Build/TelegramWeb.loader.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const tg = window.Telegram?.WebApp;
+    const inTelegram = Boolean(tg?.initData);
+    const canvas = document.getElementById('unity-canvas');
+    const status = document.getElementById('status');
+    const play = document.getElementById('play');
+    const progress = document.getElementById('progress');
+    const stage = document.getElementById('stage');
+    let game;
+    const send = (method, value) => {
+      if (game && window.republicBricksTarget) game.SendMessage(window.republicBricksTarget, method, value);
+    };
+    function layout() {
+      stage.style.height = (inTelegram && tg.viewportStableHeight ? tg.viewportStableHeight : window.innerHeight) + 'px';
+      if (inTelegram) {
+        const safe = tg.safeAreaInset || {}, content = tg.contentSafeAreaInset || {};
+        for (const side of ['top','right','bottom','left']) {
+          stage.style['padding' + side[0].toUpperCase() + side.slice(1)] =
+            `max(env(safe-area-inset-${side}, 0px), ${Math.max(safe[side] || 0, content[side] || 0)}px)`;
+        }
+      }
+      // Keep a portrait playfield when the phone rotates or on desktop.
+      const height = stage.clientHeight - parseFloat(getComputedStyle(stage).paddingTop) - parseFloat(getComputedStyle(stage).paddingBottom);
+      canvas.style.maxWidth = Math.min(560, height * 0.64) + 'px';
+    }
+    window.addEventListener('resize', layout);
+    document.addEventListener('visibilitychange', () => send('WebVisibility', document.hidden ? '0' : '1'));
+    canvas.addEventListener('contextmenu', event => event.preventDefault());
+    if (inTelegram) {
+      tg.ready(); tg.expand();
+      if (tg.isVersionAtLeast('7.7')) tg.disableVerticalSwipes();
+      tg.enableClosingConfirmation();
+      tg.BackButton.onClick(() => send('WebBack', ''));
+      tg.onEvent('viewportChanged', layout);
+      tg.onEvent('safeAreaChanged', layout);
+      tg.onEvent('contentSafeAreaChanged', layout);
+      tg.onEvent('deactivated', () => send('WebVisibility', '0'));
+      tg.onEvent('activated', () => send('WebVisibility', '1'));
+    }
+    layout();
+    play.addEventListener('click', async () => {
+      if (game) { location.reload(); return; }
+      play.hidden = true; progress.hidden = false; status.textContent = 'Cargando…';
+      try {
+        game = await createUnityInstance(canvas, {
+          dataUrl: 'Build/TelegramWeb.data.unityweb',
+          frameworkUrl: 'Build/TelegramWeb.framework.js.unityweb',
+          codeUrl: 'Build/TelegramWeb.wasm.unityweb',
+          streamingAssetsUrl: 'StreamingAssets',
+          companyName: "RepublicGames",
+          productName: "republic bricks",
+          productVersion: "0.1.0",
+          autoSyncPersistentDataPath: true,
+          devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+          showBanner: (message, type) => { console[type === 'error' ? 'error' : 'warn'](message); }
+        }, value => { progress.value = value; status.textContent = 'Cargando… ' + Math.round(value * 100) + '%'; });
+        document.getElementById('loading').hidden = true;
+        if (inTelegram) tg.BackButton.show();
+        canvas.focus();
+        send('WebVisibility', document.hidden ? '0' : '1');
+      } catch (error) {
+        console.error(error); progress.hidden = true;
+        status.textContent = 'No se pudo iniciar el juego. Comprueba la conexión y vuelve a intentarlo.';
+        document.getElementById('hint').textContent = 'Si continúa, prueba con Telegram actualizado o con otro navegador.';
+        play.textContent = 'Reintentar'; play.hidden = false;
+        play.onclick = () => location.reload();
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
