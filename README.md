@@ -1,6 +1,6 @@
 # Republic Bricks — Telegram web version
 
-Compiled Unity web build updated on 2026-11-01.
+Compiled Unity web build updated on 2026-11-01. Optional Google Analytics statistics measure actual daily play, game attempts and completed levels after player consent. Settings allow withdrawal. No Telegram identity or raw Telegram URL is sent.
 
 Monetag main zone 12166349 replaces AdsGram. Only voluntary Rewarded Interstitial ads are requested, after an information/choice dialog inside Telegram. The SDK uses the official tag supplied by the publisher dashboard: https://libtl.com/sdk.js.
 
